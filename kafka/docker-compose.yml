@@ -1,0 +1,56 @@
+version: '3.4'
+
+services:
+
+  zookeeper.dev:
+    container_name: zookeeper.dev
+    image: confluentinc/cp-zookeeper:5.3.1
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+    volumes:
+      - zookeeper_dev_data:/data
+    networks:
+      - bubble
+
+  kafka.dev:
+    container_name: kafka.dev
+    image: confluentinc/cp-kafka:5.3.1
+    restart: always
+    depends_on:
+      - zookeeper.dev
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper.dev:2181
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka.dev:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_dev_data:/var/lib/kafka/data
+    ports:
+      - 9092:9092
+    networks:
+      - bubble
+
+  kafka-ui.kafka.dev:
+    image: provectuslabs/kafka-ui:latest
+    depends_on:
+      - kafka.dev
+    environment:
+      KAFKA_CLUSTERS_0_NAME: kafka.dev:29092
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka.dev:29092
+    ports:
+      - 28080:8080
+    networks:
+      - bubble
+
+volumes:
+  kafka_dev_data:
+  zookeeper_dev_data:
+    external: false
+
+networks:
+  bubble:
+    external: true
